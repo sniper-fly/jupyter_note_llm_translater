@@ -110,6 +110,8 @@ async function main() {
     console.error("Usage: tsx main.ts <input-file> <output-file>");
     process.exit(1);
   }
+  // const inputPath = "02_short.ipynb"
+  // const outputPath = "output3.json"
 
   await translateNotebook(inputPath, outputPath).catch((error) => {
     console.error("Fatal error:", error);
