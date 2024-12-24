@@ -58,7 +58,7 @@ async function processCell(cell: NotebookCell): Promise<NotebookCell> {
 
     return {
       ...cell,
-      source: [translatedText],
+      source: (translatedText.match(/[^\n]*\n|[^\n]+/g) || []) as string[],
     };
   } catch (error) {
     console.error("Cell processing error:", error);
