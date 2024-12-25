@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { processTranslatedText } from './main';
+import { processTranslatedText } from './translateNotebook';
 
 describe('processTranslatedText', () => {
   it('should process normal markdown text correctly', () => {
