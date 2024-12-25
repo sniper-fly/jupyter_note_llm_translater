@@ -23,16 +23,18 @@ function concatenateSource(source: string[]): string {
   return source.join("");
 }
 
-// Function to translate text using OpenAI API
-async function translateText(text: string): Promise<string> {
+// Function to invoke translation text using OpenAI API
+async function invokeChatGPT(
+  userInstruction: string,
+  text: string
+): Promise<string> {
   try {
     const completion = await openAIClient.chat.completions.create({
       model: "o1-mini-2024-09-12",
       messages: [
         {
           role: "assistant",
-          content:
-            "You are a professional translator. Translate the following text to Japanese, preserving any code blocks and markdown formatting.",
+          content: userInstruction,
         },
         { role: "user", content: text },
       ],
@@ -47,14 +49,65 @@ async function translateText(text: string): Promise<string> {
 
 // Function to process a single cell
 async function processCell(cell: NotebookCell): Promise<NotebookCell> {
+  const originalText = concatenateSource(cell.source);
   try {
-    // Skip translation for code cells
-    if (cell.cell_type === "code") {
-      return cell;
-    }
+    const translatedText = await (async () => {
+      if (cell.cell_type === "code") {
+        return invokeChatGPT(
+          `\
+Translate comments within the given Python code from English to Japanese without altering the program's logic or functionality. Do not translate domain-specific English words (e.g., 'temperature'), technical terms, or words enclosed in backquotes (\`).
 
-    const originalText = concatenateSource(cell.source);
-    const translatedText = await translateText(originalText);
+# Steps
+1. Read the provided Python code.
+2. Identify the comments and translate them from English to Japanese, excluding domain-specific words, technical terms, and words in backquotes.
+3. Ensure no changes are made to the code other than the translation of comments.
+4. Preserve the position of the translated comments in their original spots.
+
+# Output Format
+- Maintain the original Python code format.
+
+# Examples
+**Input:**
+def example_function():
+    # This is a sample function
+    x = 10
+    # Print the value of x
+    print(x)
+
+**Output:**
+def example_function():
+    # これはサンプルの関数です
+    x = 10
+    # xの値を出力します
+    print(x)
+`,
+          originalText
+        );
+      } else {
+        return invokeChatGPT(
+          `\
+Translate the provided text into Japanese, focusing on prompt engineering.
+Keep domain-specific English terms, technical jargon, and words enclosed in backticks (\`) untranslated.
+
+# Steps
+1. Read the provided text, which discusses aspects of prompt engineering.
+2. Identify domain-specific English terms, technical jargon, and terms enclosed in backticks (\`) that should remain in English.
+3. Translate the rest of the text into Japanese while ensuring the meaning is preserved.
+
+# Output Format
+Provide the translated text in Japanese, maintaining the specified English terms as they are.
+
+# Examples
+**Input:**  
+"Adjust the \`temperature\` settings and other parameters to optimize the \`output\`."
+
+**Output:**  
+"\`temperature\`設定やその他のパラメータを調整して、\`output\`を最適化します。"
+`,
+          originalText
+        );
+      }
+    })();
 
     return {
       ...cell,
