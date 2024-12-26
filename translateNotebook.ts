@@ -28,9 +28,13 @@ Translate comments within the given Python code from English to Japanese without
 
 # Steps
 1. Read the provided Python code.
-2. Identify the comments and translate them from English to Japanese, excluding domain-specific words, technical terms, and words in backquotes.
-3. Ensure no changes are made to the code other than the translation of comments.
-4. Preserve the position of the translated comments in their original spots.
+2. Identify domain-specific English terms, technical jargon, and terms enclosed in backticks (\`) that should remain in English.
+3. Translate the rest of the text into Japanese while ensuring the meaning is preserved.
+4. Ensure no changes are made to the code other than the translation of comments.
+5. Preserve the position of the translated comments in their original spots.
+
+# Note
+Concentrate on faithfully translating and do not add any extra output or comments.
 
 # Output Format
 - Output Python code without enclosing code blocks. Do not include any additional text or markdown format. Provide only the Python code itself.
@@ -49,16 +53,20 @@ def example_function():
     x = 10
     # xの値を出力します
     print(x)
+--------------------------------
 `;
 
 const descriptionPrompt = `\
-Translate the provided text into Japanese, focusing on prompt engineering.
+Translate the provided markdown text into Japanese, focusing on prompt engineering.
 Keep domain-specific English terms, technical jargon, and words enclosed in backticks (\`) untranslated.
 
 # Steps
-1. Read the provided text, which discusses aspects of prompt engineering.
+1. Read the provided markdown text, which discusses aspects of prompt engineering.
 2. Identify domain-specific English terms, technical jargon, and terms enclosed in backticks (\`) that should remain in English.
 3. Translate the rest of the text into Japanese while ensuring the meaning is preserved.
+
+# Note
+Concentrate on faithfully translating and do not add any extra output or comments.
 
 # Output Format
 Provide the translated text in Japanese, maintaining the specified English terms as they are.
@@ -69,6 +77,7 @@ Provide the translated text in Japanese, maintaining the specified English terms
 
 **Output:**  
 "\`temperature\`設定やその他のパラメータを調整して、\`output\`を最適化します。"
+--------------------------------
 `;
 
 // Function to invoke translation text using OpenAI API
@@ -78,7 +87,7 @@ async function invokeChatGPT(
 ): Promise<string> {
   try {
     const completion = await openAIClient.chat.completions.create({
-      model: "o1-mini-2024-09-12",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "assistant",
@@ -86,6 +95,7 @@ async function invokeChatGPT(
         },
         { role: "user", content: text },
       ],
+      temperature: 0
     });
 
     return completion.choices[0].message.content || "";
@@ -96,13 +106,18 @@ async function invokeChatGPT(
 }
 
 // Function to process translated text
-export function processTranslatedText(text: string, cellType: string): string[] {
+export function processTranslatedText(
+  text: string,
+  cellType: string
+): string[] {
   const rawSource = (text.match(/[^\n]*\n|[^\n]+/g) || []) as string[];
-  
-  if (cellType === "code" && 
-      rawSource.length >= 2 && 
-      rawSource[0].includes("```") && 
-      rawSource[rawSource.length - 1].includes("```")) {
+
+  if (
+    cellType === "code" &&
+    rawSource.length >= 2 &&
+    rawSource[0].includes("```") &&
+    rawSource[rawSource.length - 1].includes("```")
+  ) {
     return rawSource.slice(1, -1);
   }
   return rawSource;
@@ -122,7 +137,7 @@ async function processCell(cell: NotebookCell): Promise<NotebookCell> {
 
     return {
       ...cell,
-      source: processTranslatedText(translatedText, cell.cell_type)
+      source: processTranslatedText(translatedText, cell.cell_type),
     };
   } catch (error) {
     console.error("Cell processing error:", error);
@@ -164,3 +179,13 @@ export async function translateNotebook(
     throw error;
   }
 }
+
+// (async () => {
+//   const res = await invokeChatGPT(
+//     descriptionPrompt,
+//     "### Exercise 1.1 - Counting to Three" +
+//       "Using proper `user` / `assistant` formatting, edit the `PROMPT` below to get Claude to **count to three.** The output will also indicate whether your solution is correct."
+//   );
+
+//   console.log(res);
+// })();
