@@ -1,6 +1,7 @@
 import { openAIClient } from "./openAIClient";
 import * as fs from "fs/promises";
 import "dotenv/config";
+import { logger } from "./logger";
 
 // Types for Jupyter notebook structure
 interface NotebookCell {
@@ -86,6 +87,10 @@ async function invokeChatGPT(
   text: string
 ): Promise<string> {
   try {
+    logger.info("Invoking OpenAI translation", {
+      text: text.slice(0, 50), // First 50 chars of text
+    });
+
     const completion = await openAIClient.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -95,12 +100,11 @@ async function invokeChatGPT(
         },
         { role: "user", content: text },
       ],
-      temperature: 0
+      temperature: 0,
     });
-
     return completion.choices[0].message.content || "";
   } catch (error) {
-    console.error("Translation error:", error);
+    logger.error("OpenAI translation failed", { error });
     throw error;
   }
 }
@@ -140,7 +144,6 @@ async function processCell(cell: NotebookCell): Promise<NotebookCell> {
       source: processTranslatedText(translatedText, cell.cell_type),
     };
   } catch (error) {
-    console.error("Cell processing error:", error);
     throw error;
   }
 }
@@ -150,6 +153,11 @@ export async function translateNotebook(
   inputPath: string,
   outputPath: string
 ): Promise<void> {
+  logger.info("Starting notebook translation", {
+    inputPath,
+    outputPath,
+  });
+
   try {
     // Read and parse input file
     const fileContent = await fs.readFile(inputPath, "utf8");
@@ -173,9 +181,15 @@ export async function translateNotebook(
       "utf8"
     );
 
-    console.log("Translation completed successfully");
+    logger.info("Translation completed successfully", {
+      cellsCount: notebook.cells.length,
+    });
   } catch (error) {
-    console.error("Notebook translation error:", error);
+    logger.error("Notebook translation failed", {
+      inputPath,
+      outputPath,
+      error,
+    });
     throw error;
   }
 }
