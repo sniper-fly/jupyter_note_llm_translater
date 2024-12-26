@@ -1,7 +1,7 @@
 import { translateNotebook } from "./translateNotebook";
 import { readdir } from "fs/promises";
 import { join } from "path";
-import logger from './logger';
+import { logger } from "./logger";
 
 async function cmdExec() {
   const inputPath = process.argv[2];
@@ -28,18 +28,18 @@ async function main() {
     for (const file of files) {
       const inputPath = join(notesDir, file);
       const outputPath = join(outputDir, file);
-      
-      logger.info('Processing file', { 
+
+      logger.info("Processing file", {
         file,
         inputPath,
-        outputPath 
+        outputPath,
       });
       await translateNotebook(inputPath, outputPath);
     }
 
-    logger.info('Batch translation completed successfully');
+    logger.info("Batch translation completed successfully");
   } catch (error) {
-    logger.error('Batch processing failed', { error });
+    logger.error("Batch processing failed", { error });
     process.exit(1);
   }
 }
